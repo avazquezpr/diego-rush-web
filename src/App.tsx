@@ -70,6 +70,11 @@ class DiegoRushScene extends Phaser.Scene {
   private progress = 0
   private gameWidth = 390
   private gameHeight = 720
+  private orbFloatTweens = new Set<Phaser.Tweens.Tween>()
+  private trailFx?: Phaser.GameObjects.Particles.ParticleEmitter
+  private pointerHandler?: () => void
+  private spaceHandler?: () => void
+  private resizeHandler?: (size: Phaser.Structs.Size) => void
 
   constructor(
     phaseRef: React.MutableRefObject<GamePhase>,
@@ -105,11 +110,16 @@ class DiegoRushScene extends Phaser.Scene {
 
   create() {
     this.handleResize(this.scale.width, this.scale.height)
+    this.cameras.main.setRoundPixels(true)
+
+    ;['diego-run', 'diego-idle', 'diego-jump', 'obstacle-a', 'obstacle-b', 'pickup-orb', 'bg-far', 'bg-mid', 'bg-near', 'bg-stars'].forEach((key) => {
+      this.textures.get(key)?.setFilter(Phaser.Textures.FilterMode.NEAREST)
+    })
 
     this.skyFar = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-far').setOrigin(0)
-    this.skyMid = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-mid').setOrigin(0).setAlpha(0.7)
-    this.starfield = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-stars').setOrigin(0).setAlpha(0.55)
-    this.skyNear = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-near').setOrigin(0).setAlpha(0.95)
+    this.skyMid = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-mid').setOrigin(0).setAlpha(0.76)
+    this.starfield = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-stars').setOrigin(0).setAlpha(0.5)
+    this.skyNear = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-near').setOrigin(0).setAlpha(0.96)
 
     if (!this.anims.exists('diego-run-loop')) {
       this.anims.create({ key: 'diego-run-loop', frames: this.anims.generateFrameNumbers('diego-run', { start: 0, end: 5 }), frameRate: 12, repeat: -1 })
@@ -127,7 +137,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true })
     this.pickups = this.physics.add.group({ allowGravity: false, immovable: true })
 
-    const spark = this.add.particles(0, 0, 'pickup-orb', {
+    this.trailFx = this.add.particles(0, 0, 'pickup-orb', {
       lifespan: { min: 350, max: 900 },
       speedX: { min: -30, max: -120 },
       speedY: { min: -35, max: 35 },
@@ -138,10 +148,12 @@ class DiegoRushScene extends Phaser.Scene {
       follow: this.player,
       followOffset: { x: -30, y: 18 },
     })
-    spark.setDepth(6)
+    this.trailFx.setDepth(6)
 
-    this.input.on('pointerdown', () => this.flap())
-    this.input.keyboard?.on('keydown-SPACE', () => this.flap())
+    this.pointerHandler = () => this.flap()
+    this.spaceHandler = () => this.flap()
+    this.input.on('pointerdown', this.pointerHandler)
+    this.input.keyboard?.on('keydown-SPACE', this.spaceHandler)
 
     this.physics.add.collider(this.player, this.obstacles, () => this.endRun(), undefined, this)
     this.physics.add.overlap(this.player, this.pickups, (_, pickup) => {
@@ -150,13 +162,18 @@ class DiegoRushScene extends Phaser.Scene {
       orb.setData('collected', true)
       this.score += 3
       this.onScoreUpdate(this.score)
+      this.clearOrbTween(orb)
       this.tweens.add({ targets: orb, scale: 1.8, alpha: 0, duration: 180, onComplete: () => orb.destroy() })
       this.onAudioEvent('score')
     })
 
-    this.scale.on('resize', (size: Phaser.Structs.Size) => {
+    this.resizeHandler = (size: Phaser.Structs.Size) => {
       this.handleResize(size.width, size.height)
-    })
+    }
+    this.scale.on('resize', this.resizeHandler)
+
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.onSceneShutdown, this)
+    this.events.once(Phaser.Scenes.Events.DESTROY, this.onSceneShutdown, this)
   }
 
   startRun() {
@@ -169,8 +186,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.onRuntimeUpdate(0)
     this.onScoreUpdate(0)
 
-    this.obstacles.clear(true, true)
-    this.pickups.clear(true, true)
+    this.cleanupSpawnedObjects()
 
     this.player.setPosition(this.gameWidth * 0.3, this.gameHeight * 0.5)
     this.player.setVelocity(0, 0)
@@ -244,7 +260,10 @@ class DiegoRushScene extends Phaser.Scene {
     this.pickups.getChildren().forEach((child) => {
       const pickup = child as Phaser.Physics.Arcade.Image
       pickup.rotation += 0.05
-      if (pickup.x + pickup.width < -20) pickup.destroy()
+      if (pickup.x + pickup.width < -20) {
+        this.clearOrbTween(pickup)
+        pickup.destroy()
+      }
     })
 
     if (this.player.y < -20 || this.player.y > this.gameHeight - 20) {
@@ -257,6 +276,11 @@ class DiegoRushScene extends Phaser.Scene {
   }
 
   private spawnObstaclePair() {
+    if (this.obstacles.countActive(true) > 36 || this.pickups.countActive(true) > 18) {
+      this.trimOldSpawnedObjects()
+      return
+    }
+
     const gap = Phaser.Math.Between(150, 180)
     const centerY = Phaser.Math.Between(180, this.gameHeight - 180)
     const halfGap = gap / 2
@@ -285,7 +309,9 @@ class DiegoRushScene extends Phaser.Scene {
     orb.setAlpha(0.95)
     orb.setData('collected', false)
 
-    this.tweens.add({ targets: orb, y: orbY - 12, yoyo: true, repeat: -1, duration: 550, ease: 'Sine.easeInOut' })
+    const floatTween = this.tweens.add({ targets: orb, y: orbY - 12, yoyo: true, repeat: -1, duration: 550, ease: 'Sine.easeInOut' })
+    this.orbFloatTweens.add(floatTween)
+    orb.setData('floatTween', floatTween)
 
     this.obstacles.add(top)
     this.obstacles.add(bottom)
@@ -297,6 +323,7 @@ class DiegoRushScene extends Phaser.Scene {
 
     this.phaseRef.current = 'gameover'
     this.spawnTimer?.remove(false)
+    this.spawnTimer = undefined
     this.player.setVelocity(0, 0)
     this.player.play('diego-idle-loop', true)
     this.onAudioEvent('hit')
@@ -311,6 +338,44 @@ class DiegoRushScene extends Phaser.Scene {
     this.skyMid?.setSize(width, height)
     this.skyNear?.setSize(width, height)
     this.starfield?.setSize(width, height)
+  }
+
+  private clearOrbTween(orb: Phaser.Physics.Arcade.Image) {
+    const tween = orb.getData('floatTween') as Phaser.Tweens.Tween | undefined
+    if (tween) {
+      tween.stop()
+      this.orbFloatTweens.delete(tween)
+    }
+    orb.setData('floatTween', undefined)
+  }
+
+  private trimOldSpawnedObjects() {
+    const obstacleChildren = this.obstacles.getChildren() as Phaser.Physics.Arcade.Image[]
+    const pickupChildren = this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]
+    obstacleChildren.slice(0, 8).forEach((obstacle) => obstacle.destroy())
+    pickupChildren.slice(0, 4).forEach((pickup) => {
+      this.clearOrbTween(pickup)
+      pickup.destroy()
+    })
+  }
+
+  private cleanupSpawnedObjects() {
+    ;(this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]).forEach((pickup) => this.clearOrbTween(pickup))
+    this.orbFloatTweens.forEach((tween) => tween.stop())
+    this.orbFloatTweens.clear()
+    this.obstacles.clear(true, true)
+    this.pickups.clear(true, true)
+  }
+
+  private onSceneShutdown() {
+    this.spawnTimer?.remove(false)
+    this.spawnTimer = undefined
+    this.cleanupSpawnedObjects()
+    this.trailFx?.stop()
+    this.trailFx?.destroy()
+    this.input.off('pointerdown', this.pointerHandler)
+    this.input.keyboard?.off('keydown-SPACE', this.spaceHandler)
+    if (this.resizeHandler) this.scale.off('resize', this.resizeHandler)
   }
 }
 
@@ -350,6 +415,7 @@ function App() {
   useEffect(() => {
     if (!gameHostRef.current) return
 
+    const audio = audioRef.current
     const scene = new DiegoRushScene(
       phaseRef,
       setScore,
@@ -359,12 +425,12 @@ function App() {
         localStorage.setItem(HIGH_SCORE_KEY, String(nextHigh))
         setHighScore(nextHigh)
         setProgress(sceneRef.current?.getProgress() ?? 0)
-        audioRef.current.playSfx('gameOver')
+        audio.playSfx('gameOver')
       },
       (event: SceneAudioEvent) => {
-        if (event === 'jump') audioRef.current.playSfx('jump')
-        if (event === 'hit') audioRef.current.playSfx('hit')
-        if (event === 'score') audioRef.current.playSfx('score')
+        if (event === 'jump') audio.playSfx('jump')
+        if (event === 'hit') audio.playSfx('hit')
+        if (event === 'score') audio.playSfx('score')
       },
       (seconds) => {
         setRuntime(seconds)
@@ -391,6 +457,12 @@ function App() {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
+      pixelArt: true,
+      render: {
+        antialias: false,
+        pixelArt: true,
+        roundPixels: true,
+      },
       scene: [scene],
     })
 
@@ -409,7 +481,7 @@ function App() {
       game.destroy(true)
       gameRef.current = null
       sceneRef.current = null
-      audioRef.current.stopMusic()
+      audio.stopMusic()
     }
   }, [])
 

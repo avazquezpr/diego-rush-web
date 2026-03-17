@@ -7,8 +7,9 @@ import scoreUrl from './assets/audio/sfx-score.wav'
 import uiClickUrl from './assets/audio/sfx-ui-click.wav'
 
 type Channel = 'music' | 'sfx'
-
 type SfxName = 'jump' | 'hit' | 'score' | 'uiClick' | 'gameOver'
+
+const SFX_POOL_SIZE = 6
 
 export class GameAudio {
   private readonly music = {
@@ -24,6 +25,22 @@ export class GameAudio {
     gameOver: gameOverStingUrl,
   }
 
+  private readonly sfxPools: Record<SfxName, HTMLAudioElement[]> = {
+    jump: [],
+    hit: [],
+    score: [],
+    uiClick: [],
+    gameOver: [],
+  }
+
+  private readonly sfxCursor: Record<SfxName, number> = {
+    jump: 0,
+    hit: 0,
+    score: 0,
+    uiClick: 0,
+    gameOver: 0,
+  }
+
   private unlocked = false
   private muted = false
   private musicVolume = 0.5
@@ -34,6 +51,15 @@ export class GameAudio {
     this.music.gameplay.loop = true
     this.music.menu.preload = 'auto'
     this.music.gameplay.preload = 'auto'
+
+    ;(Object.keys(this.sfxMap) as SfxName[]).forEach((name) => {
+      this.sfxPools[name] = Array.from({ length: SFX_POOL_SIZE }, () => {
+        const audio = new Audio(this.sfxMap[name])
+        audio.preload = 'auto'
+        return audio
+      })
+    })
+
     this.applyVolumes()
   }
 
@@ -42,6 +68,7 @@ export class GameAudio {
     this.unlocked = true
     this.music.menu.load()
     this.music.gameplay.load()
+    ;(Object.keys(this.sfxPools) as SfxName[]).forEach((name) => this.sfxPools[name].forEach((audio) => audio.load()))
   }
 
   setMuted(next: boolean) {
@@ -77,9 +104,14 @@ export class GameAudio {
   playSfx(name: SfxName) {
     if (!this.unlocked || this.muted || this.sfxVolume <= 0) return
 
-    const audio = new Audio(this.sfxMap[name])
+    const pool = this.sfxPools[name]
+    const index = this.sfxCursor[name]
+    const audio = pool[index]
+    this.sfxCursor[name] = (index + 1) % pool.length
+
+    audio.pause()
+    audio.currentTime = 0
     audio.volume = this.sfxVolume
-    audio.preload = 'auto'
     void audio.play().catch(() => undefined)
   }
 
@@ -101,5 +133,12 @@ export class GameAudio {
     const musicVolume = this.muted ? 0 : this.musicVolume
     this.music.menu.volume = musicVolume
     this.music.gameplay.volume = musicVolume
+
+    const sfxVolume = this.muted ? 0 : this.sfxVolume
+    ;(Object.keys(this.sfxPools) as SfxName[]).forEach((name) => {
+      this.sfxPools[name].forEach((audio) => {
+        audio.volume = sfxVolume
+      })
+    })
   }
 }
