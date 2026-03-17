@@ -568,20 +568,20 @@ function App() {
       </section>
 
       <section className="top-chips">
-        <div className="chip">Pilot: Diego</div>
-        <div className="chip">Run: {formatTime(runtime)}</div>
-        <div className={`chip status ${phase}`}>Status: {phase === 'playing' ? 'RUSHING' : phase.toUpperCase()}</div>
+        <div className="chip">Piloto: Diego</div>
+        <div className="chip">Tiempo: {formatTime(runtime)}</div>
+        <div className={`chip status ${phase}`}>Estado: {phase === 'playing' ? 'EN RUTA' : phase.toUpperCase()}</div>
       </section>
 
       <aside className="left-panel">
         <header>
           <img src={panelImg} alt="hud" className="panel-base" />
           <img src={portraitImg} alt="Diego portrait" className="portrait" />
-          <img src={logoImg} alt="Diego Rush" className="logo-title" />
+          <img src={logoImg} alt="Ahiacabo: La Ruta de Diego" className="logo-title" />
         </header>
-        <div className="stat-row"><span>Score</span><strong>{score}</strong></div>
-        <div className="stat-row"><span>High</span><strong>{highScore}</strong></div>
-        <div className="stat-row"><span>Buffs</span><strong>—</strong></div>
+        <div className="stat-row"><span>Puntaje</span><strong>{score}</strong></div>
+        <div className="stat-row"><span>Récord</span><strong>{highScore}</strong></div>
+        <div className="stat-row"><span>Mejoras</span><strong>—</strong></div>
         <div className="icons-row">
           <img src={heartImg} alt="health" />
           <img src={energyImg} alt="energy" />
@@ -599,30 +599,30 @@ function App() {
       </aside>
 
       <aside className="right-panel">
-        <h2>Sector Map</h2>
+        <h2>Mapa del Sector</h2>
         <div className="mini-grid">
           <div className="scanline" />
           <div className="tracker" style={{ left: `${Math.max(4, Math.round(progress * 92))}%` }} />
         </div>
-        <div className="progress-row"><span>Run Progress</span><strong>{Math.round(progress * 100)}%</strong></div>
+        <div className="progress-row"><span>Progreso de Ruta</span><strong>{Math.round(progress * 100)}%</strong></div>
         <div className="progress-bar"><span style={{ width: `${Math.max(4, progress * 100)}%` }} /></div>
-        <p className="lore-inline">Lore unlocked: {unlockedCards.length}/10</p>
+        <p className="lore-inline">Crónicas desbloqueadas: {unlockedCards.length}/10</p>
       </aside>
 
       {phase === 'menu' && (
         <div className="overlay">
-          <h2>Arena Link Online</h2>
-          <p>Tap, click or press SPACE to keep Diego alive through the wasteland lanes.</p>
-          <button onClick={startGame}>Start Run</button>
+          <h2>Ahiacabo: La Ruta de Diego</h2>
+          <p>Solo los valientes llegan al final del camino.</p>
+          <button onClick={startGame}>Comenzar Ruta</button>
         </div>
       )}
 
       {phase === 'gameover' && (
         <div className="overlay gameover">
-          <h2>Transmission Lost</h2>
-          <p>Final Score: {score}</p>
-          <p>High Score: {highScore}</p>
-          <button onClick={startGame}>Run Again</button>
+          <h2>Ruta Interrumpida</h2>
+          <p>Puntaje Final: {score}</p>
+          <p>Puntaje Máximo: {highScore}</p>
+          <button onClick={startGame}>Intentar de Nuevo</button>
         </div>
       )}
     </main>

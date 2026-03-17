@@ -1,4 +1,4 @@
-# Diego Rush (Web MVP)
+# Ahiacabo: La Ruta de Diego (Web MVP)
 
 A Flappy-style endless runner built with **React + Vite + Phaser 3**.
 
