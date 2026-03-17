@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Phaser from 'phaser'
 import { GameAudio } from './audio'
+import runSheet from './assets/sprites/diego_run_sheet.png'
+import idleSheet from './assets/sprites/diego_idle_sheet.png'
+import jumpSheet from './assets/sprites/diego_jump_sheet.png'
+import portraitImg from './assets/sprites/portrait.png'
+import heartImg from './assets/sprites/hud_heart.png'
+import energyImg from './assets/sprites/hud_energy.png'
+import panelImg from './assets/sprites/panel.png'
 import './App.css'
 
 type GamePhase = 'menu' | 'playing' | 'gameover'
@@ -38,7 +45,7 @@ class DiegoRushScene extends Phaser.Scene {
 
   private phaseRef: React.MutableRefObject<GamePhase>
 
-  private player!: Phaser.Physics.Arcade.Image
+  private player!: Phaser.Physics.Arcade.Sprite
   private obstacles!: Phaser.Physics.Arcade.Group
   private skyFar!: Phaser.GameObjects.TileSprite
   private skyNear!: Phaser.GameObjects.TileSprite
@@ -63,6 +70,13 @@ class DiegoRushScene extends Phaser.Scene {
 
   preload() {
     this.createTextures()
+    this.load.spritesheet('diego-run', runSheet, { frameWidth: 96, frameHeight: 128 })
+    this.load.spritesheet('diego-idle', idleSheet, { frameWidth: 96, frameHeight: 128 })
+    this.load.spritesheet('diego-jump', jumpSheet, { frameWidth: 96, frameHeight: 128 })
+    this.load.image('hud-portrait', portraitImg)
+    this.load.image('hud-heart', heartImg)
+    this.load.image('hud-energy', energyImg)
+    this.load.image('hud-panel', panelImg)
   }
 
   create() {
@@ -71,10 +85,27 @@ class DiegoRushScene extends Phaser.Scene {
     this.skyFar = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-far').setOrigin(0)
     this.skyNear = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-near').setOrigin(0).setAlpha(0.95)
 
-    this.player = this.physics.add.image(this.gameWidth * 0.3, this.gameHeight * 0.5, 'diego')
-    this.player.setCircle(18, 2, 2)
+    if (!this.anims.exists('diego-run-loop')) {
+      this.anims.create({ key: 'diego-run-loop', frames: this.anims.generateFrameNumbers('diego-run', { start: 0, end: 3 }), frameRate: 10, repeat: -1 })
+      this.anims.create({ key: 'diego-idle-loop', frames: this.anims.generateFrameNumbers('diego-idle', { start: 0, end: 1 }), frameRate: 4, repeat: -1 })
+      this.anims.create({ key: 'diego-jump-pose', frames: [{ key: 'diego-jump', frame: 0 }], frameRate: 1, repeat: 0 })
+    }
+
+    this.player = this.physics.add.sprite(this.gameWidth * 0.3, this.gameHeight * 0.5, 'diego-run', 0)
+    this.player.setDisplaySize(86, 114)
+    this.player.setCircle(24, 24, 24)
     this.player.setBounce(0.1)
     this.player.setCollideWorldBounds(false)
+    this.player.play('diego-idle-loop')
+
+    const hudPanel = this.add.image(22, 18, 'hud-panel').setOrigin(0, 0).setScrollFactor(0)
+    hudPanel.setDisplaySize(210, 105)
+    hudPanel.setAlpha(0.85)
+    this.add.image(44, 42, 'hud-portrait').setOrigin(0, 0).setDisplaySize(48, 48).setScrollFactor(0)
+    this.add.image(105, 48, 'hud-heart').setOrigin(0, 0).setDisplaySize(18, 16).setScrollFactor(0)
+    this.add.image(105, 74, 'hud-energy').setOrigin(0, 0).setDisplaySize(18, 16).setScrollFactor(0)
+    this.add.text(128, 46, 'Diego', { fontSize: '14px', color: '#ffffff', fontStyle: 'bold' }).setScrollFactor(0)
+    this.add.text(128, 70, 'Rush Mode', { fontSize: '12px', color: '#8ee8ff' }).setScrollFactor(0)
 
     this.obstacles = this.physics.add.group({
       allowGravity: false,
@@ -102,6 +133,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.player.setPosition(this.gameWidth * 0.3, this.gameHeight * 0.5)
     this.player.setVelocity(0, 0)
     this.player.setAngle(0)
+    this.player.play('diego-run-loop', true)
 
     this.spawnTimer?.remove(false)
     this.spawnTimer = this.time.addEvent({
@@ -116,6 +148,7 @@ class DiegoRushScene extends Phaser.Scene {
     if (this.phaseRef.current !== 'playing') return
     this.player.setVelocityY(-380)
     this.player.setAngle(-18)
+    this.player.play('diego-jump-pose', true)
     this.onAudioEvent('jump')
   }
 
@@ -127,6 +160,11 @@ class DiegoRushScene extends Phaser.Scene {
 
     const playerBody = this.player.body as Phaser.Physics.Arcade.Body
     this.player.setAngle(Phaser.Math.Clamp(playerBody.velocity.y * 0.05, -20, 60))
+    if (playerBody.velocity.y < -40) {
+      if (this.player.anims.currentAnim?.key !== 'diego-jump-pose') this.player.play('diego-jump-pose', true)
+    } else if (this.player.anims.currentAnim?.key !== 'diego-run-loop') {
+      this.player.play('diego-run-loop', true)
+    }
 
     this.scoreElapsed += delta
     if (this.scoreElapsed >= 150) {
@@ -185,6 +223,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.phaseRef.current = 'gameover'
     this.spawnTimer?.remove(false)
     this.player.setVelocity(0, 0)
+    this.player.play('diego-idle-loop', true)
     this.onAudioEvent('hit')
     this.onGameOver(this.score)
   }
@@ -196,16 +235,9 @@ class DiegoRushScene extends Phaser.Scene {
   }
 
   private createTextures() {
-    if (this.textures.exists('diego')) return
+    if (this.textures.exists('obstacle')) return
 
     const g = this.add.graphics()
-
-    g.fillGradientStyle(0x42e9f5, 0x30c8f1, 0x2f7bff, 0x1f59ff, 1)
-    g.fillRoundedRect(0, 0, 40, 40, 12)
-    g.fillStyle(0xffffff, 1)
-    g.fillCircle(28, 14, 4)
-    g.generateTexture('diego', 40, 40)
-    g.clear()
 
     g.fillStyle(0x8e61ff, 1)
     g.fillRoundedRect(0, 0, 72, 420, 18)

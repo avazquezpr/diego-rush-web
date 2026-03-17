@@ -1,17 +1,22 @@
 .app-shell {
-  min-height: 100dvh;
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 1rem;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
   color: #eef3ff;
+  overflow: hidden;
 }
 
 .top-bar {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 25;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
-  margin-bottom: 0.75rem;
 }
 
 .top-bar h1 {
@@ -30,15 +35,20 @@
 }
 
 .audio-panel {
+  position: absolute;
+  top: 64px;
+  left: 12px;
+  right: 12px;
+  z-index: 25;
   display: grid;
   grid-template-columns: auto 1fr 1fr;
   gap: 0.7rem;
   align-items: center;
-  margin-bottom: 0.75rem;
   padding: 0.55rem 0.75rem;
   border: 1px solid #3f57b8;
   border-radius: 14px;
   background: rgba(24, 34, 70, 0.75);
+  backdrop-filter: blur(3px);
 }
 
 .audio-panel label {
@@ -59,15 +69,12 @@
 }
 
 .game-wrap {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: min(62dvh, 720px);
-  min-height: 420px;
-  border-radius: 22px;
-  border: 1px solid #3f57b8;
+  height: 100%;
   overflow: hidden;
   background: radial-gradient(circle at top, #1f2950 0%, #0e1326 78%);
-  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.35);
 }
 
 .game-canvas {
@@ -115,11 +122,18 @@ button:hover {
 }
 
 .lore-panel {
-  margin-top: 1rem;
-  background: linear-gradient(180deg, rgba(46, 63, 126, 0.45), rgba(17, 23, 44, 0.8));
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  z-index: 25;
+  max-height: 30dvh;
+  overflow: auto;
+  background: linear-gradient(180deg, rgba(46, 63, 126, 0.55), rgba(17, 23, 44, 0.92));
   border: 1px solid #3f57b8;
   border-radius: 18px;
-  padding: 1rem;
+  padding: 0.8rem;
+  backdrop-filter: blur(2px);
 }
 
 .lore-panel h3 {
@@ -160,16 +174,16 @@ button:hover {
 }
 
 @media (max-width: 700px) {
-  .app-shell {
-    padding: 0.6rem;
-  }
-
   .audio-panel {
     grid-template-columns: 1fr;
+    top: 58px;
   }
 
-  .game-wrap {
-    height: 56dvh;
-    min-height: 380px;
+  .top-bar {
+    top: 6px;
+  }
+
+  .lore-panel {
+    max-height: 34dvh;
   }
 }
