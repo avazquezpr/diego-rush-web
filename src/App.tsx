@@ -7,6 +7,11 @@ import jumpSheet from './assets/sprites/diego/diego_jump_sheet.png'
 import obstacleAImg from './assets/sprites/obstacles/obstacle_pillar_a.png'
 import obstacleBImg from './assets/sprites/obstacles/obstacle_pillar_b.png'
 import pickupOrbImg from './assets/sprites/pickups/pickup_orb.png'
+import propFireImg from './assets/sprites/props/prop_fire.png'
+import propCrateImg from './assets/sprites/props/prop_crate.png'
+import propPlantImg from './assets/sprites/props/prop_plant.png'
+import propSkullImg from './assets/sprites/props/prop_skull.png'
+import propTorchImg from './assets/sprites/props/prop_torch.png'
 import bgFarImg from './assets/backgrounds/bg_far.png'
 import bgMidImg from './assets/backgrounds/bg_mid.png'
 import bgNearImg from './assets/backgrounds/bg_near.png'
@@ -58,6 +63,7 @@ class DiegoRushScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite
   private obstacles!: Phaser.Physics.Arcade.Group
   private pickups!: Phaser.Physics.Arcade.Group
+  private props!: Phaser.Physics.Arcade.Group
   private skyFar!: Phaser.GameObjects.TileSprite
   private skyMid!: Phaser.GameObjects.TileSprite
   private skyNear!: Phaser.GameObjects.TileSprite
@@ -98,6 +104,11 @@ class DiegoRushScene extends Phaser.Scene {
     this.load.image('obstacle-a', obstacleAImg)
     this.load.image('obstacle-b', obstacleBImg)
     this.load.image('pickup-orb', pickupOrbImg)
+    this.load.image('prop-fire', propFireImg)
+    this.load.image('prop-crate', propCrateImg)
+    this.load.image('prop-plant', propPlantImg)
+    this.load.image('prop-skull', propSkullImg)
+    this.load.image('prop-torch', propTorchImg)
     this.load.image('bg-far', bgFarImg)
     this.load.image('bg-mid', bgMidImg)
     this.load.image('bg-near', bgNearImg)
@@ -112,7 +123,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.handleResize(this.scale.width, this.scale.height)
     this.cameras.main.setRoundPixels(true)
 
-    ;['diego-run', 'diego-idle', 'diego-jump', 'obstacle-a', 'obstacle-b', 'pickup-orb', 'bg-far', 'bg-mid', 'bg-near', 'bg-stars'].forEach((key) => {
+    ;['diego-run', 'diego-idle', 'diego-jump', 'obstacle-a', 'obstacle-b', 'pickup-orb', 'prop-fire', 'prop-crate', 'prop-plant', 'prop-skull', 'prop-torch', 'bg-far', 'bg-mid', 'bg-near', 'bg-stars'].forEach((key) => {
       this.textures.get(key)?.setFilter(Phaser.Textures.FilterMode.NEAREST)
     })
 
@@ -136,6 +147,7 @@ class DiegoRushScene extends Phaser.Scene {
 
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true })
     this.pickups = this.physics.add.group({ allowGravity: false, immovable: true })
+    this.props = this.physics.add.group({ allowGravity: false, immovable: true })
 
     this.trailFx = this.add.particles(0, 0, 'pickup-orb', {
       lifespan: { min: 350, max: 900 },
@@ -266,6 +278,11 @@ class DiegoRushScene extends Phaser.Scene {
       }
     })
 
+    this.props.getChildren().forEach((child) => {
+      const prop = child as Phaser.Physics.Arcade.Image
+      if (prop.x + prop.width < -40) prop.destroy()
+    })
+
     if (this.player.y < -20 || this.player.y > this.gameHeight - 20) {
       this.endRun()
     }
@@ -276,7 +293,7 @@ class DiegoRushScene extends Phaser.Scene {
   }
 
   private spawnObstaclePair() {
-    if (this.obstacles.countActive(true) > 36 || this.pickups.countActive(true) > 18) {
+    if (this.obstacles.countActive(true) > 36 || this.pickups.countActive(true) > 18 || this.props.countActive(true) > 20) {
       this.trimOldSpawnedObjects()
       return
     }
@@ -312,6 +329,18 @@ class DiegoRushScene extends Phaser.Scene {
     const floatTween = this.tweens.add({ targets: orb, y: orbY - 12, yoyo: true, repeat: -1, duration: 550, ease: 'Sine.easeInOut' })
     this.orbFloatTweens.add(floatTween)
     orb.setData('floatTween', floatTween)
+
+    if (Phaser.Math.Between(0, 100) < 72) {
+      const propOptions = ['prop-fire', 'prop-crate', 'prop-plant', 'prop-skull', 'prop-torch']
+      const propKey = propOptions[Phaser.Math.Between(0, propOptions.length - 1)]
+      const propY = Phaser.Math.Between(56, this.gameHeight - 56)
+      const prop = this.physics.add.image(this.gameWidth + Phaser.Math.Between(90, 170), propY, propKey)
+      prop.setVelocityX(-220)
+      prop.setImmovable(true)
+      prop.setAlpha(0.8)
+      prop.setScale(propKey === 'prop-plant' ? 0.84 : 0.72)
+      this.props.add(prop)
+    }
 
     this.obstacles.add(top)
     this.obstacles.add(bottom)
@@ -352,11 +381,13 @@ class DiegoRushScene extends Phaser.Scene {
   private trimOldSpawnedObjects() {
     const obstacleChildren = this.obstacles.getChildren() as Phaser.Physics.Arcade.Image[]
     const pickupChildren = this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]
+    const propChildren = this.props.getChildren() as Phaser.Physics.Arcade.Image[]
     obstacleChildren.slice(0, 8).forEach((obstacle) => obstacle.destroy())
     pickupChildren.slice(0, 4).forEach((pickup) => {
       this.clearOrbTween(pickup)
       pickup.destroy()
     })
+    propChildren.slice(0, 6).forEach((prop) => prop.destroy())
   }
 
   private cleanupSpawnedObjects() {
@@ -365,6 +396,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.orbFloatTweens.clear()
     this.obstacles.clear(true, true)
     this.pickups.clear(true, true)
+    this.props.clear(true, true)
   }
 
   private onSceneShutdown() {
