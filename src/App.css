@@ -97,12 +97,13 @@
   height: 48px;
 }
 
-.left-panel h1 {
+.logo-title {
   position: absolute;
-  top: 19px;
+  top: 8px;
   left: 62px;
-  margin: 0;
-  font-size: 1rem;
+  width: calc(100% - 70px);
+  height: 48px;
+  object-fit: contain;
 }
 
 .stat-row,
@@ -127,8 +128,8 @@
 }
 
 .icons-row img {
-  width: 18px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   opacity: 0.95;
 }
 
