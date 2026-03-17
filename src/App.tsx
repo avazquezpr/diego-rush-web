@@ -123,9 +123,6 @@ class DiegoRushScene extends Phaser.Scene {
     this.handleResize(this.scale.width, this.scale.height)
     this.cameras.main.setRoundPixels(true)
 
-    ;['diego-run', 'diego-idle', 'diego-jump', 'obstacle-a', 'obstacle-b', 'pickup-orb', 'prop-fire', 'prop-crate', 'prop-plant', 'prop-skull', 'prop-torch', 'bg-far', 'bg-mid', 'bg-near', 'bg-stars'].forEach((key) => {
-      this.textures.get(key)?.setFilter(Phaser.Textures.FilterMode.NEAREST)
-    })
 
     this.skyFar = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-far').setOrigin(0)
     this.skyMid = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-mid').setOrigin(0).setAlpha(0.76)
@@ -489,10 +486,10 @@ function App() {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
-      pixelArt: true,
+      pixelArt: false,
       render: {
-        antialias: false,
-        pixelArt: true,
+        antialias: true,
+        pixelArt: false,
         roundPixels: true,
       },
       scene: [scene],

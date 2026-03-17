@@ -1,296 +1,33 @@
-.arena-shell {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100dvh;
-  color: #f1f1ff;
-  overflow: hidden;
-  image-rendering: pixelated;
-  font-family: 'Press Start 2P', 'VT323', monospace;
-  background: radial-gradient(circle at 50% -10%, #2b1947 0%, #0a0a13 68%);
-}
-
-.game-stage {
-  position: absolute;
-  inset: 0;
-  border: 3px solid #6a4d9f;
-  box-shadow: inset 0 0 0 3px #24133f, inset 0 0 110px rgba(0, 0, 0, 0.66);
-}
-
-.game-canvas {
-  width: 100%;
-  height: 100%;
-}
-
-.vignette {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 12;
-  background: radial-gradient(circle at center, transparent 50%, rgba(7, 5, 17, 0.74) 100%);
-}
-
-.top-chips {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
-  display: flex;
-  gap: 0.45rem;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.chip {
-  border: 2px solid #6840a8;
-  background: #1a1130;
-  padding: 0.42rem 0.7rem;
-  border-radius: 6px;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  box-shadow: inset 0 0 0 2px #322157, 0 8px 0 rgba(0, 0, 0, 0.35);
-}
-
-.chip.status.playing {
-  color: #8cffc2;
-  border-color: #4fbe86;
-}
-
-.left-panel,
-.right-panel {
-  position: absolute;
-  top: 64px;
-  z-index: 30;
-  width: min(22vw, 260px);
-  min-width: 190px;
-  border: 3px solid #6741a7;
-  border-radius: 10px;
-  padding: 0.7rem;
-  background: linear-gradient(180deg, rgba(28, 18, 48, 0.95), rgba(13, 8, 25, 0.92));
-  box-shadow: inset 0 0 0 2px #311f54, 0 12px 0 rgba(0, 0, 0, 0.3);
-}
-
-.left-panel {
-  left: 12px;
-}
-
-.left-panel header {
-  position: relative;
-  min-height: 66px;
-  margin-bottom: 0.55rem;
-}
-
-.panel-base {
-  width: 100%;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 8px;
-  opacity: 0.9;
-  image-rendering: pixelated;
-}
-
-.portrait {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  width: 48px;
-  height: 48px;
-  image-rendering: pixelated;
-}
-
-.logo-title {
-  position: absolute;
-  top: 8px;
-  left: 62px;
-  width: calc(100% - 70px);
-  height: 48px;
-  object-fit: contain;
-  image-rendering: pixelated;
-}
-
-.stat-row,
-.progress-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.38rem 0;
-  border-bottom: 1px solid rgba(152, 124, 207, 0.3);
-  font-size: 0.62rem;
-}
-
-.stat-row strong,
-.progress-row strong {
-  color: #8af5ff;
-}
-
-.icons-row {
-  display: flex;
-  gap: 0.55rem;
-  padding: 0.55rem 0;
-}
-
-.icons-row img {
-  width: 22px;
-  height: 22px;
-  image-rendering: pixelated;
-}
-
-.left-panel label {
-  display: block;
-  margin-top: 0.55rem;
-  font-size: 0.55rem;
-  color: #dbe5ff;
-}
-
-.left-panel input[type='range'] {
-  width: 100%;
-}
-
-.right-panel {
-  right: 12px;
-}
-
-.right-panel h2 {
-  margin: 0 0 0.45rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #ad8cff;
-}
-
-.mini-grid {
-  position: relative;
-  height: 120px;
-  border-radius: 8px;
-  border: 2px solid #6a49a3;
-  background:
-    linear-gradient(0deg, rgba(130, 104, 185, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(130, 104, 185, 0.18) 1px, transparent 1px),
-    linear-gradient(160deg, rgba(42, 30, 71, 0.9), rgba(17, 10, 33, 0.9));
-  background-size: 16px 16px, 16px 16px, cover;
-  overflow: hidden;
-  margin-bottom: 0.6rem;
-}
-
-.scanline {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 0%, rgba(173, 150, 255, 0.22) 50%, transparent 100%);
-  animation: sweep 3s linear infinite;
-}
-
-.tracker {
-  position: absolute;
-  bottom: 20px;
-  width: 14px;
-  height: 14px;
-  background: #b89aff;
-  box-shadow: 0 0 0 3px rgba(184, 154, 255, 0.3);
-  transform: translateX(-50%);
-}
-
-.progress-bar {
-  margin-top: 0.35rem;
-  height: 9px;
-  background: #24173f;
-  border: 2px solid #6243a0;
-  overflow: hidden;
-}
-
-.progress-bar span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, #63c7ff, #a56cff);
-  transition: width 180ms linear;
-}
-
-.lore-inline {
-  margin: 0.65rem 0 0;
-  font-size: 0.56rem;
-  color: #c2b7ea;
-}
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.65rem;
-  text-align: center;
-  background: radial-gradient(circle at center, rgba(25, 17, 45, 0.7), rgba(8, 6, 15, 0.9));
-  padding: 1rem;
-}
-
-.overlay h2 {
-  margin: 0;
-  font-size: clamp(1.2rem, 2vw, 1.8rem);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #e1d5ff;
-  text-shadow: 0 3px #412a6f;
-}
-
-.overlay p {
-  margin: 0;
-  max-width: 540px;
-  color: #d6cdef;
-  font-size: 0.64rem;
-  line-height: 1.7;
-}
-
-button {
-  border: 2px solid #865ad2;
-  border-radius: 8px;
-  padding: 0.68rem 1.1rem;
-  font-weight: 800;
-  font-size: 0.62rem;
-  color: #f7f1ff;
-  background: linear-gradient(180deg, #9159e0, #5d2ea0);
-  cursor: pointer;
-  box-shadow: inset 0 0 0 2px #b88dff, 0 5px 0 rgba(0, 0, 0, 0.3);
-}
-
-button:hover {
-  filter: brightness(1.08);
-}
-
-.audio-toggle {
-  width: 100%;
-  margin-top: 0.25rem;
-  padding: 0.52rem 0.8rem;
-}
-
-@keyframes sweep {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100%); }
-}
-
-@media (max-width: 900px) {
-  .left-panel,
-  .right-panel {
-    width: 45vw;
-    min-width: 0;
-    top: auto;
-    bottom: 10px;
-    max-height: 34dvh;
-    overflow: auto;
-  }
-
-  .left-panel { left: 8px; }
-  .right-panel { right: 8px; }
-
-  .top-chips {
-    top: 8px;
-    gap: 0.35rem;
-  }
-
-  .chip {
-    font-size: 0.56rem;
-    padding: 0.3rem 0.62rem;
-  }
-}
+.arena-shell { position: fixed; inset: 0; width: 100vw; height: 100dvh; color: #e2e8de; overflow: hidden; font-family: 'Trebuchet MS', 'Segoe UI', sans-serif; background: radial-gradient(circle at 50% -10%, #6c8fa3 0%, #1a1f24 68%); }
+.game-stage { position: absolute; inset: 0; border: 3px solid #7a5c3e; box-shadow: inset 0 0 0 3px #2e2e2e, inset 0 0 110px rgba(26,31,36,.6); }
+.game-canvas { width: 100%; height: 100%; }
+.vignette { pointer-events:none; position:absolute; inset:0; z-index:12; background: radial-gradient(circle at center, transparent 52%, rgba(26,31,36,.74) 100%); }
+.top-chips { position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:30; display:flex; gap:.45rem; flex-wrap:wrap; justify-content:center; }
+.chip { border:2px solid #6b6b6b; background:#2e2e2e; padding:.42rem .7rem; border-radius:6px; font-size:.68rem; font-weight:700; letter-spacing:.03em; box-shadow: inset 0 0 0 2px #1a1f24, 0 8px 0 rgba(0,0,0,.25); }
+.chip.status.playing { color:#ffc857; border-color:#d94a2a; }
+.left-panel,.right-panel { position:absolute; top:64px; z-index:30; width:min(22vw,260px); min-width:190px; border:3px solid #7a5c3e; border-radius:10px; padding:.7rem; background: linear-gradient(180deg, rgba(46,46,46,.95), rgba(26,31,36,.92)); box-shadow: inset 0 0 0 2px #6b6b6b, 0 12px 0 rgba(0,0,0,.25); }
+.left-panel { left:12px; } .right-panel { right:12px; }
+.left-panel header { position:relative; min-height:66px; margin-bottom:.55rem; }
+.panel-base { width:100%; height:64px; object-fit:cover; border-radius:8px; opacity:.95; }
+.portrait { position:absolute; top:8px; left:8px; width:48px; height:48px; }
+.logo-title { position:absolute; top:8px; left:62px; width:calc(100% - 70px); height:48px; object-fit:contain; }
+.stat-row,.progress-row { display:flex; justify-content:space-between; align-items:center; padding:.38rem 0; border-bottom:1px solid rgba(168,168,168,.35); font-size:.68rem; }
+.stat-row strong,.progress-row strong { color:#a7d38b; }
+.icons-row { display:flex; gap:.55rem; padding:.55rem 0; } .icons-row img { width:22px; height:22px; }
+.left-panel label { display:block; margin-top:.55rem; font-size:.62rem; color:#d5ded2; }
+.left-panel input[type='range'] { width:100%; }
+.right-panel h2 { margin:0 0 .45rem; font-size:.78rem; text-transform:uppercase; letter-spacing:.08em; color:#ffc857; }
+.mini-grid { position:relative; height:120px; border-radius:8px; border:2px solid #6b6b6b; background: linear-gradient(0deg, rgba(127,168,156,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(127,168,156,.18) 1px, transparent 1px), linear-gradient(160deg, rgba(31,61,43,.9), rgba(26,31,36,.9)); background-size:16px 16px, 16px 16px, cover; overflow:hidden; margin-bottom:.6rem; }
+.scanline { position:absolute; inset:0; background: linear-gradient(180deg, transparent 0%, rgba(167,211,139,.22) 50%, transparent 100%); animation:sweep 3s linear infinite; }
+.tracker { position:absolute; bottom:20px; width:14px; height:14px; background:#ff7a1a; box-shadow:0 0 0 3px rgba(255,122,26,.3); transform:translateX(-50%); }
+.progress-bar { margin-top:.35rem; height:9px; background:#2e2e2e; border:2px solid #6b6b6b; overflow:hidden; }
+.progress-bar span { display:block; height:100%; background:linear-gradient(90deg, #7fa89c, #ff7a1a); transition:width 180ms linear; }
+.lore-inline { margin:.65rem 0 0; font-size:.62rem; color:#c8d3c7; }
+.overlay { position:absolute; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.65rem; text-align:center; background: radial-gradient(circle at center, rgba(46,46,46,.72), rgba(26,31,36,.92)); padding:1rem; }
+.overlay h2 { margin:0; font-size:clamp(1.2rem, 2vw, 1.8rem); text-transform:uppercase; letter-spacing:.06em; color:#ffc857; text-shadow:0 3px #5a3a2e; }
+.overlay p { margin:0; max-width:540px; color:#d6ddcd; font-size:.74rem; line-height:1.6; }
+button { border:2px solid #7a5c3e; border-radius:8px; padding:.68rem 1.1rem; font-weight:800; font-size:.68rem; color:#1a1f24; background:linear-gradient(180deg,#ffc857,#ff7a1a); cursor:pointer; box-shadow:inset 0 0 0 2px #a7d38b, 0 5px 0 rgba(0,0,0,.25); }
+button:hover { filter:brightness(1.06); }
+.audio-toggle { width:100%; margin-top:.25rem; padding:.52rem .8rem; }
+@keyframes sweep { 0%{transform:translateY(-100%)} 100%{transform:translateY(100%)} }
+@media (max-width:900px){ .left-panel,.right-panel { width:45vw; min-width:0; top:auto; bottom:10px; max-height:34dvh; overflow:auto;} .left-panel{left:8px}.right-panel{right:8px} .top-chips{top:8px;gap:.35rem;} .chip{font-size:.56rem;padding:.3rem .62rem;} }
