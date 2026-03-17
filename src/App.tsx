@@ -40,16 +40,16 @@ const AUDIO_MUSIC_VOL_KEY = 'diego-rush-music-vol'
 const AUDIO_SFX_VOL_KEY = 'diego-rush-sfx-vol'
 
 const LORE_CARDS: LoreCard[] = [
-  { id: 1, title: 'Card 01 · The First Sprint', body: 'Diego learned to outrun storms before breakfast.', unlockScore: 10 },
-  { id: 2, title: 'Card 02 · Jetpack Boots', body: 'Prototype boots made every jump feel illegal.', unlockScore: 20 },
-  { id: 3, title: 'Card 03 · Neon Bay', body: 'He raced lights on the pier and won by a mile.', unlockScore: 30 },
-  { id: 4, title: 'Card 04 · Wind Whisperer', body: 'The wind started moving out of Diego’s way.', unlockScore: 40 },
-  { id: 5, title: 'Card 05 · Rooftop Oath', body: 'He swore to never miss a rooftop landing again.', unlockScore: 50 },
-  { id: 6, title: 'Card 06 · Ghost Route', body: 'A hidden lane appears only to fearless runners.', unlockScore: 60 },
-  { id: 7, title: 'Card 07 · Pulse Reactor', body: 'His heartbeat synced with the city grid.', unlockScore: 75 },
-  { id: 8, title: 'Card 08 · The Quiet Rival', body: 'Someone fast is watching every move.', unlockScore: 90 },
-  { id: 9, title: 'Card 09 · Final Sector', body: 'Every obstacle now feels personal.', unlockScore: 110 },
-  { id: 10, title: 'Card 10 · Diego Rush', body: 'Legend confirmed. The city runs at Diego speed.', unlockScore: 130 },
+  { id: 1, title: 'Crónica 01 · El Primer Impulso', body: 'Diego aprendió a correr contra la tormenta antes del amanecer.', unlockScore: 10 },
+  { id: 2, title: 'Crónica 02 · Botas de Salto', body: 'Un prototipo peligroso convirtió cada salto en apuesta.', unlockScore: 20 },
+  { id: 3, title: 'Crónica 03 · Bahía Neón', body: 'Corrió entre luces y ruinas hasta quedar invicto.', unlockScore: 30 },
+  { id: 4, title: 'Crónica 04 · Voz del Viento', body: 'El viento dejó de ser obstáculo y se volvió guía.', unlockScore: 40 },
+  { id: 5, title: 'Crónica 05 · Juramento en Altura', body: 'Prometió no volver a fallar un salto decisivo.', unlockScore: 50 },
+  { id: 6, title: 'Crónica 06 · Ruta Fantasma', body: 'Solo quien no teme encuentra este camino oculto.', unlockScore: 60 },
+  { id: 7, title: 'Crónica 07 · Pulso de la Isla', body: 'Su latido empezó a sincronizarse con las ruinas vivas.', unlockScore: 75 },
+  { id: 8, title: 'Crónica 08 · Rival Silencioso', body: 'Alguien observa cada movimiento desde las sombras.', unlockScore: 90 },
+  { id: 9, title: 'Crónica 09 · Último Sector', body: 'Cada obstáculo parece puesto para frenarlo.', unlockScore: 110 },
+  { id: 10, title: 'Crónica 10 · Ahiacabo', body: 'La leyenda crece: solo los valientes llegan al final.', unlockScore: 130 },
 ]
 
 class DiegoRushScene extends Phaser.Scene {
@@ -584,13 +584,13 @@ function App() {
           <img src={energyImg} alt="energy" />
           <img src={coinImg} alt="coin" />
         </div>
-        <button className="audio-toggle" onClick={onToggleMute}>{isMuted ? 'Unmute' : 'Mute'}</button>
+        <button className="audio-toggle" onClick={onToggleMute}>{isMuted ? 'Activar audio' : 'Silenciar'}</button>
         <label>
-          Music {Math.round(musicVolume * 100)}%
+          Música {Math.round(musicVolume * 100)}%
           <input type="range" min={0} max={100} value={Math.round(musicVolume * 100)} onPointerDown={unlockAndClick} onChange={(e) => setMusicVolume(Number(e.target.value) / 100)} />
         </label>
         <label>
-          SFX {Math.round(sfxVolume * 100)}%
+          Efectos {Math.round(sfxVolume * 100)}%
           <input type="range" min={0} max={100} value={Math.round(sfxVolume * 100)} onPointerDown={unlockAndClick} onChange={(e) => setSfxVolume(Number(e.target.value) / 100)} />
         </label>
       </aside>
