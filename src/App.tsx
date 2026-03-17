@@ -139,7 +139,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.player.setDisplaySize(86, 114)
     this.player.setCircle(24, 24, 24)
     this.player.setBounce(0.1)
-    this.player.setCollideWorldBounds(false)
+    this.player.setCollideWorldBounds(true)
     this.player.play('diego-idle-loop')
 
     this.obstacles = this.physics.add.group({ allowGravity: false, immovable: true })
@@ -213,7 +213,7 @@ class DiegoRushScene extends Phaser.Scene {
 
   flap() {
     if (this.phaseRef.current !== 'playing') return
-    this.player.setVelocityY(-380)
+    this.player.setVelocityY(-320)
     this.player.setAngle(-18)
     this.player.play('diego-jump-pose', true)
     this.onAudioEvent('jump')
@@ -280,7 +280,7 @@ class DiegoRushScene extends Phaser.Scene {
       if (prop.x + prop.width < -40) prop.destroy()
     })
 
-    if (this.player.y < -20 || this.player.y > this.gameHeight - 20) {
+    if (this.player.y > this.gameHeight - 8) {
       this.endRun()
     }
   }
@@ -307,13 +307,17 @@ class DiegoRushScene extends Phaser.Scene {
     top.setDisplaySize(72, topHeight)
     top.setVelocityX(-220)
     top.setImmovable(true)
+    top.setTint(0xffb24a)
     top.setData('isTop', true)
+    ;(top.body as Phaser.Physics.Arcade.Body).setSize(72, topHeight, true)
 
     const bottom = this.physics.add.image(this.gameWidth + 40, bottomY + (this.gameHeight - bottomY) / 2, obstacleKey)
     bottom.setDisplaySize(72, this.gameHeight - bottomY)
     bottom.setVelocityX(-220)
     bottom.setImmovable(true)
+    bottom.setTint(0xffb24a)
     bottom.setData('isTop', false)
+    ;(bottom.body as Phaser.Physics.Arcade.Body).setSize(72, this.gameHeight - bottomY, true)
 
     const orbY = Phaser.Math.Between(topHeight + 40, bottomY - 40)
     const orb = this.physics.add.image(this.gameWidth + 44, orbY, 'pickup-orb')
