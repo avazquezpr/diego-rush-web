@@ -164,6 +164,7 @@ class DiegoRushScene extends Phaser.Scene {
   private spaceHandler?: () => void
   private resizeHandler?: (size: Phaser.Structs.Size) => void
   private pickupUpdateElapsed = 0
+  private noCollisionUntil = 0
 
   constructor(
     phaseRef: React.MutableRefObject<GamePhase>,
@@ -250,7 +251,10 @@ class DiegoRushScene extends Phaser.Scene {
     this.input.on('pointerdown', this.pointerHandler)
     this.input.keyboard?.on('keydown-SPACE', this.spaceHandler)
 
-    this.physics.add.collider(this.player, this.obstacles, () => this.endRun(), undefined, this)
+    this.physics.add.collider(this.player, this.obstacles, () => {
+      if (this.time.now < this.noCollisionUntil) return
+      this.endRun()
+    }, undefined, this)
     this.physics.add.overlap(this.player, this.pickups, (_, pickup) => {
       const orb = pickup as Phaser.Physics.Arcade.Image
       if (orb.getData('collected')) return
@@ -280,6 +284,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.runtimeSeconds = 0
     this.progress = 0
     this.pickupUpdateElapsed = 0
+    this.noCollisionUntil = this.time.now + 2500
     this.onRuntimeUpdate(0)
     this.onScoreUpdate(0)
 
@@ -397,8 +402,8 @@ class DiegoRushScene extends Phaser.Scene {
       return
     }
 
-    const gap = Phaser.Math.Between(150, 180)
-    const centerY = Phaser.Math.Between(180, this.gameHeight - 180)
+    const gap = this.quality.mobile ? Phaser.Math.Between(220, 260) : Phaser.Math.Between(190, 230)
+    const centerY = Phaser.Math.Between(190, this.gameHeight - 190)
     const halfGap = gap / 2
 
     const topHeight = centerY - halfGap
@@ -406,20 +411,20 @@ class DiegoRushScene extends Phaser.Scene {
 
     const obstacleKey = Phaser.Math.Between(0, 1) ? 'obstacle-a' : 'obstacle-b'
     const top = this.physics.add.image(this.gameWidth + 40, topHeight / 2, obstacleKey)
-    top.setDisplaySize(72, topHeight)
-    top.setVelocityX(-220)
+    top.setDisplaySize(this.quality.mobile ? 96 : 86, topHeight)
+    top.setVelocityX(this.quality.mobile ? -170 : -205)
     top.setImmovable(true)
     top.setTint(0xffb24a)
     top.setData('isTop', true)
-    ;(top.body as Phaser.Physics.Arcade.Body).setSize(72, topHeight, true)
+    ;(top.body as Phaser.Physics.Arcade.Body).setSize(this.quality.mobile ? 88 : 78, topHeight, true)
 
     const bottom = this.physics.add.image(this.gameWidth + 40, bottomY + (this.gameHeight - bottomY) / 2, obstacleKey)
-    bottom.setDisplaySize(72, this.gameHeight - bottomY)
-    bottom.setVelocityX(-220)
+    bottom.setDisplaySize(this.quality.mobile ? 96 : 86, this.gameHeight - bottomY)
+    bottom.setVelocityX(this.quality.mobile ? -170 : -205)
     bottom.setImmovable(true)
     bottom.setTint(0xffb24a)
     bottom.setData('isTop', false)
-    ;(bottom.body as Phaser.Physics.Arcade.Body).setSize(72, this.gameHeight - bottomY, true)
+    ;(bottom.body as Phaser.Physics.Arcade.Body).setSize(this.quality.mobile ? 88 : 78, this.gameHeight - bottomY, true)
 
     const orbY = Phaser.Math.Between(topHeight + 40, bottomY - 40)
     const orb = this.physics.add.image(this.gameWidth + 44, orbY, 'pickup-orb')
