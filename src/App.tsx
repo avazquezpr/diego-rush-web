@@ -27,6 +27,23 @@ import './App.css'
 type GamePhase = 'menu' | 'playing' | 'gameover'
 type SceneAudioEvent = 'jump' | 'hit' | 'score'
 
+type QualityProfile = {
+  mobile: boolean
+  spawnDelay: number
+  trailFrequency: number
+  trailScaleStart: number
+  parallaxScale: number
+  pickupRotationStep: number
+  pickupRotationInterval: number
+  maxObstacles: number
+  maxPickups: number
+  maxProps: number
+  trimObstacles: number
+  trimPickups: number
+  trimProps: number
+  propChance: number
+}
+
 type LoreCard = {
   id: number
   title: string
@@ -38,6 +55,7 @@ const HIGH_SCORE_KEY = 'diego-rush-high-score'
 const AUDIO_MUTE_KEY = 'diego-rush-mute'
 const AUDIO_MUSIC_VOL_KEY = 'diego-rush-music-vol'
 const AUDIO_SFX_VOL_KEY = 'diego-rush-sfx-vol'
+const PROP_OPTIONS = ['prop-fire', 'prop-crate', 'prop-plant', 'prop-skull', 'prop-torch'] as const
 
 const LORE_CARDS: LoreCard[] = [
   { id: 1, title: 'Crónica 01 · El Primer Impulso', body: 'Diego aprendió a correr contra la tormenta antes del amanecer.', unlockScore: 10 },
@@ -52,11 +70,75 @@ const LORE_CARDS: LoreCard[] = [
   { id: 10, title: 'Crónica 10 · Ahiacabo', body: 'La leyenda crece: solo los valientes llegan al final.', unlockScore: 130 },
 ]
 
+function detectQualityProfile(): QualityProfile {
+  if (typeof window === 'undefined') {
+    return {
+      mobile: false,
+      spawnDelay: 1400,
+      trailFrequency: 120,
+      trailScaleStart: 0.45,
+      parallaxScale: 1,
+      pickupRotationStep: 0.05,
+      pickupRotationInterval: 16,
+      maxObstacles: 36,
+      maxPickups: 18,
+      maxProps: 20,
+      trimObstacles: 8,
+      trimPickups: 4,
+      trimProps: 6,
+      propChance: 72,
+    }
+  }
+
+  const ua = window.navigator.userAgent
+  const isMobileUA = /Android|iPhone|iPad|iPod|Mobi|Mobile/i.test(ua)
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  const smallScreen = Math.min(window.innerWidth, window.innerHeight) <= 900
+  const isMobile = isMobileUA || coarsePointer || smallScreen
+
+  if (isMobile) {
+    return {
+      mobile: true,
+      spawnDelay: 1500,
+      trailFrequency: 220,
+      trailScaleStart: 0.32,
+      parallaxScale: 0.72,
+      pickupRotationStep: 0.035,
+      pickupRotationInterval: 48,
+      maxObstacles: 20,
+      maxPickups: 10,
+      maxProps: 8,
+      trimObstacles: 6,
+      trimPickups: 3,
+      trimProps: 3,
+      propChance: 40,
+    }
+  }
+
+  return {
+    mobile: false,
+    spawnDelay: 1400,
+    trailFrequency: 120,
+    trailScaleStart: 0.45,
+    parallaxScale: 1,
+    pickupRotationStep: 0.05,
+    pickupRotationInterval: 16,
+    maxObstacles: 36,
+    maxPickups: 18,
+    maxProps: 20,
+    trimObstacles: 8,
+    trimPickups: 4,
+    trimProps: 6,
+    propChance: 72,
+  }
+}
+
 class DiegoRushScene extends Phaser.Scene {
   private readonly onScoreUpdate: (score: number) => void
   private readonly onGameOver: (score: number) => void
   private readonly onAudioEvent: (event: SceneAudioEvent) => void
   private readonly onRuntimeUpdate: (seconds: number) => void
+  private readonly quality: QualityProfile
 
   private phaseRef: React.MutableRefObject<GamePhase>
 
@@ -81,6 +163,7 @@ class DiegoRushScene extends Phaser.Scene {
   private pointerHandler?: () => void
   private spaceHandler?: () => void
   private resizeHandler?: (size: Phaser.Structs.Size) => void
+  private pickupUpdateElapsed = 0
 
   constructor(
     phaseRef: React.MutableRefObject<GamePhase>,
@@ -88,6 +171,7 @@ class DiegoRushScene extends Phaser.Scene {
     onGameOver: (score: number) => void,
     onAudioEvent: (event: SceneAudioEvent) => void,
     onRuntimeUpdate: (seconds: number) => void,
+    quality: QualityProfile,
   ) {
     super('DiegoRushScene')
     this.phaseRef = phaseRef
@@ -95,6 +179,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.onGameOver = onGameOver
     this.onAudioEvent = onAudioEvent
     this.onRuntimeUpdate = onRuntimeUpdate
+    this.quality = quality
   }
 
   preload() {
@@ -123,7 +208,6 @@ class DiegoRushScene extends Phaser.Scene {
     this.handleResize(this.scale.width, this.scale.height)
     this.cameras.main.setRoundPixels(true)
 
-
     this.skyFar = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-far').setOrigin(0)
     this.skyMid = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-mid').setOrigin(0).setAlpha(0.76)
     this.starfield = this.add.tileSprite(0, 0, this.gameWidth, this.gameHeight, 'bg-stars').setOrigin(0).setAlpha(0.5)
@@ -147,13 +231,15 @@ class DiegoRushScene extends Phaser.Scene {
     this.props = this.physics.add.group({ allowGravity: false, immovable: true })
 
     this.trailFx = this.add.particles(0, 0, 'pickup-orb', {
-      lifespan: { min: 350, max: 900 },
+      lifespan: { min: this.quality.mobile ? 280 : 350, max: this.quality.mobile ? 580 : 900 },
       speedX: { min: -30, max: -120 },
       speedY: { min: -35, max: 35 },
       quantity: 1,
-      alpha: { start: 0.5, end: 0 },
-      scale: { start: 0.45, end: 0 },
-      blendMode: 'ADD',
+      frequency: this.quality.trailFrequency,
+      maxParticles: this.quality.mobile ? 24 : 56,
+      alpha: { start: this.quality.mobile ? 0.34 : 0.5, end: 0 },
+      scale: { start: this.quality.trailScaleStart, end: 0 },
+      blendMode: this.quality.mobile ? 'NORMAL' : 'ADD',
       follow: this.player,
       followOffset: { x: -30, y: 18 },
     })
@@ -172,7 +258,8 @@ class DiegoRushScene extends Phaser.Scene {
       this.score += 3
       this.onScoreUpdate(this.score)
       this.clearOrbTween(orb)
-      this.tweens.add({ targets: orb, scale: 1.8, alpha: 0, duration: 180, onComplete: () => orb.destroy() })
+      this.tweens.killTweensOf(orb)
+      this.tweens.add({ targets: orb, scale: 1.5, alpha: 0, duration: this.quality.mobile ? 140 : 180, onComplete: () => orb.destroy() })
       this.onAudioEvent('score')
     })
 
@@ -192,6 +279,7 @@ class DiegoRushScene extends Phaser.Scene {
     this.runtimeElapsed = 0
     this.runtimeSeconds = 0
     this.progress = 0
+    this.pickupUpdateElapsed = 0
     this.onRuntimeUpdate(0)
     this.onScoreUpdate(0)
 
@@ -204,7 +292,7 @@ class DiegoRushScene extends Phaser.Scene {
 
     this.spawnTimer?.remove(false)
     this.spawnTimer = this.time.addEvent({
-      delay: 1400,
+      delay: this.quality.spawnDelay,
       callback: this.spawnObstaclePair,
       callbackScope: this,
       loop: true,
@@ -220,10 +308,11 @@ class DiegoRushScene extends Phaser.Scene {
   }
 
   update(_: number, delta: number) {
-    this.skyFar.tilePositionX += 0.15
-    this.skyMid.tilePositionX += 0.35
-    this.starfield.tilePositionX += 0.6
-    this.skyNear.tilePositionX += 0.95
+    const parallaxScale = this.quality.parallaxScale
+    this.skyFar.tilePositionX += 0.15 * parallaxScale
+    this.skyMid.tilePositionX += 0.35 * parallaxScale
+    this.starfield.tilePositionX += 0.6 * parallaxScale
+    this.skyNear.tilePositionX += 0.95 * parallaxScale
 
     if (this.phaseRef.current !== 'playing') return
 
@@ -250,11 +339,12 @@ class DiegoRushScene extends Phaser.Scene {
       this.progress = Math.min(1, this.progress + 0.01)
     }
 
-    this.obstacles.getChildren().forEach((child) => {
-      const obstacle = child as Phaser.Physics.Arcade.Image & { passed?: boolean }
+    const obstacleChildren = this.obstacles.getChildren() as Phaser.Physics.Arcade.Image[]
+    for (let i = obstacleChildren.length - 1; i >= 0; i -= 1) {
+      const obstacle = obstacleChildren[i] as Phaser.Physics.Arcade.Image & { passed?: boolean }
       if (obstacle.x + obstacle.width < 0) {
         obstacle.destroy()
-        return
+        continue
       }
 
       if (!obstacle.passed && obstacle.getData('isTop') && obstacle.x < this.player.x) {
@@ -264,21 +354,29 @@ class DiegoRushScene extends Phaser.Scene {
         this.onScoreUpdate(this.score)
         this.onAudioEvent('score')
       }
-    })
+    }
 
-    this.pickups.getChildren().forEach((child) => {
-      const pickup = child as Phaser.Physics.Arcade.Image
-      pickup.rotation += 0.05
-      if (pickup.x + pickup.width < -20) {
-        this.clearOrbTween(pickup)
-        pickup.destroy()
+    this.pickupUpdateElapsed += delta
+    const shouldUpdatePickups = this.pickupUpdateElapsed >= this.quality.pickupRotationInterval
+    if (shouldUpdatePickups) {
+      this.pickupUpdateElapsed = 0
+      const pickupChildren = this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]
+      for (let i = pickupChildren.length - 1; i >= 0; i -= 1) {
+        const pickup = pickupChildren[i]
+        pickup.rotation += this.quality.pickupRotationStep
+        if (pickup.x + pickup.width < -20) {
+          this.clearOrbTween(pickup)
+          this.tweens.killTweensOf(pickup)
+          pickup.destroy()
+        }
       }
-    })
+    }
 
-    this.props.getChildren().forEach((child) => {
-      const prop = child as Phaser.Physics.Arcade.Image
+    const propChildren = this.props.getChildren() as Phaser.Physics.Arcade.Image[]
+    for (let i = propChildren.length - 1; i >= 0; i -= 1) {
+      const prop = propChildren[i]
       if (prop.x + prop.width < -40) prop.destroy()
-    })
+    }
 
     if (this.player.y > this.gameHeight - 8) {
       this.endRun()
@@ -290,7 +388,11 @@ class DiegoRushScene extends Phaser.Scene {
   }
 
   private spawnObstaclePair() {
-    if (this.obstacles.countActive(true) > 36 || this.pickups.countActive(true) > 18 || this.props.countActive(true) > 20) {
+    if (
+      this.obstacles.countActive(true) > this.quality.maxObstacles
+      || this.pickups.countActive(true) > this.quality.maxPickups
+      || this.props.countActive(true) > this.quality.maxProps
+    ) {
       this.trimOldSpawnedObjects()
       return
     }
@@ -327,13 +429,19 @@ class DiegoRushScene extends Phaser.Scene {
     orb.setAlpha(0.95)
     orb.setData('collected', false)
 
-    const floatTween = this.tweens.add({ targets: orb, y: orbY - 12, yoyo: true, repeat: -1, duration: 550, ease: 'Sine.easeInOut' })
+    const floatTween = this.tweens.add({
+      targets: orb,
+      y: orbY - (this.quality.mobile ? 8 : 12),
+      yoyo: true,
+      repeat: -1,
+      duration: this.quality.mobile ? 700 : 550,
+      ease: 'Sine.easeInOut',
+    })
     this.orbFloatTweens.add(floatTween)
     orb.setData('floatTween', floatTween)
 
-    if (Phaser.Math.Between(0, 100) < 72) {
-      const propOptions = ['prop-fire', 'prop-crate', 'prop-plant', 'prop-skull', 'prop-torch']
-      const propKey = propOptions[Phaser.Math.Between(0, propOptions.length - 1)]
+    if (Phaser.Math.Between(0, 100) < this.quality.propChance) {
+      const propKey = PROP_OPTIONS[Phaser.Math.Between(0, PROP_OPTIONS.length - 1)]
       const propY = Phaser.Math.Between(56, this.gameHeight - 56)
       const prop = this.physics.add.image(this.gameWidth + Phaser.Math.Between(90, 170), propY, propKey)
       prop.setVelocityX(-220)
@@ -383,16 +491,20 @@ class DiegoRushScene extends Phaser.Scene {
     const obstacleChildren = this.obstacles.getChildren() as Phaser.Physics.Arcade.Image[]
     const pickupChildren = this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]
     const propChildren = this.props.getChildren() as Phaser.Physics.Arcade.Image[]
-    obstacleChildren.slice(0, 8).forEach((obstacle) => obstacle.destroy())
-    pickupChildren.slice(0, 4).forEach((pickup) => {
+    obstacleChildren.slice(0, this.quality.trimObstacles).forEach((obstacle) => obstacle.destroy())
+    pickupChildren.slice(0, this.quality.trimPickups).forEach((pickup) => {
       this.clearOrbTween(pickup)
+      this.tweens.killTweensOf(pickup)
       pickup.destroy()
     })
-    propChildren.slice(0, 6).forEach((prop) => prop.destroy())
+    propChildren.slice(0, this.quality.trimProps).forEach((prop) => prop.destroy())
   }
 
   private cleanupSpawnedObjects() {
-    ;(this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]).forEach((pickup) => this.clearOrbTween(pickup))
+    ;(this.pickups.getChildren() as Phaser.Physics.Arcade.Image[]).forEach((pickup) => {
+      this.clearOrbTween(pickup)
+      this.tweens.killTweensOf(pickup)
+    })
     this.orbFloatTweens.forEach((tween) => tween.stop())
     this.orbFloatTweens.clear()
     this.obstacles.clear(true, true)
@@ -406,9 +518,12 @@ class DiegoRushScene extends Phaser.Scene {
     this.cleanupSpawnedObjects()
     this.trailFx?.stop()
     this.trailFx?.destroy()
-    this.input.off('pointerdown', this.pointerHandler)
-    this.input.keyboard?.off('keydown-SPACE', this.spaceHandler)
+    if (this.pointerHandler) this.input.off('pointerdown', this.pointerHandler)
+    if (this.spaceHandler) this.input.keyboard?.off('keydown-SPACE', this.spaceHandler)
     if (this.resizeHandler) this.scale.off('resize', this.resizeHandler)
+    this.pointerHandler = undefined
+    this.spaceHandler = undefined
+    this.resizeHandler = undefined
   }
 }
 
@@ -424,6 +539,7 @@ function App() {
   const sceneRef = useRef<DiegoRushScene | null>(null)
   const phaseRef = useRef<GamePhase>('menu')
   const audioRef = useRef(new GameAudio())
+  const qualityRef = useRef<QualityProfile>(detectQualityProfile())
 
   const [phase, setPhase] = useState<GamePhase>('menu')
   const [score, setScore] = useState(0)
@@ -469,6 +585,7 @@ function App() {
         setRuntime(seconds)
         setProgress(sceneRef.current?.getProgress() ?? 0)
       },
+      qualityRef.current,
     )
 
     sceneRef.current = scene
@@ -492,7 +609,7 @@ function App() {
       },
       pixelArt: false,
       render: {
-        antialias: true,
+        antialias: !qualityRef.current.mobile,
         pixelArt: false,
         roundPixels: true,
       },
