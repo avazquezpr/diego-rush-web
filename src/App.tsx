@@ -21,7 +21,7 @@ import heartImg from './assets/ui/icon_heart.png'
 import energyImg from './assets/ui/icon_energy.png'
 import coinImg from './assets/ui/icon_coin.png'
 import panelImg from './assets/ui/panel_frame.png'
-import logoImg from './assets/ui/logo_diego_rush.png'
+import logoImg from './assets/ui/logo_diego.png'
 import './App.css'
 
 type GamePhase = 'menu' | 'playing' | 'gameover'
